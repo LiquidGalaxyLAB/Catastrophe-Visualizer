@@ -1,14 +1,14 @@
 // lib/services/liquid_galaxy/liquid_galaxy_service.dart
 // Mock version for Week 1 testing - SSH commented out
 
-import 'dart:io';
+//import 'dart:io';
 // import 'package:dartssh2/dartssh2.dart';  // Commented out for Week 1
 
-class LiquidGalaxyService {
+//class LiquidGalaxyService {
   // SSH client would go here when ready
   // SSHClient? _client;
 
-  String? _host;
+  /*String? _host;
   String? _username;
   String? _password;
   int? _port;
@@ -35,7 +35,7 @@ class LiquidGalaxyService {
       _port = port;
       _rigCount = rigCount;
 
-      print('🔗 Mock SSH Connection Attempt:');
+      print(' Mock SSH Connection Attempt:');
       print('   Host: $host:$port');
       print('   Username: $username');
       print('   Rigs: $rigCount');
@@ -46,7 +46,7 @@ class LiquidGalaxyService {
       // Mock validation - check if host looks like an IP
       if (_isValidHost(host)) {
         _isConnected = true;
-        print('✅ Mock SSH Connection: SUCCESS');
+        print(' Mock SSH Connection: SUCCESS');
         print('   Connected to Liquid Galaxy: $host');
 
         // Mock test command
@@ -54,12 +54,12 @@ class LiquidGalaxyService {
 
         return true;
       } else {
-        print('❌ Mock SSH Connection: FAILED - Invalid host format');
+        print(' Mock SSH Connection: FAILED - Invalid host format');
         _isConnected = false;
         return false;
       }
     } catch (e) {
-      print('❌ Mock SSH Connection: FAILED - $e');
+      print(' Mock SSH Connection: FAILED - $e');
       _isConnected = false;
       return false;
     }
@@ -71,22 +71,22 @@ class LiquidGalaxyService {
       if (_isConnected) {
         await Future.delayed(Duration(milliseconds: 500));
         _isConnected = false;
-        print('🔌 Disconnected from Liquid Galaxy');
+        print(' Disconnected from Liquid Galaxy');
       }
     } catch (e) {
-      print('❌ Error disconnecting: $e');
+      print(' Error disconnecting: $e');
     }
   }
 
   /// Mock KML sending to Liquid Galaxy
   Future<bool> sendKMLToLG(String kmlContent, String fileName) async {
     if (!_isConnected) {
-      print('❌ Not connected to Liquid Galaxy');
+      print(' Not connected to Liquid Galaxy');
       return false;
     }
 
     try {
-      print('📡 Mock sending KML to Liquid Galaxy...');
+      print(' Mock sending KML to Liquid Galaxy...');
       print('   File: $fileName.kml');
       print('   Size: ${kmlContent.length} characters');
       print('   Rigs: $_rigCount');
@@ -96,22 +96,22 @@ class LiquidGalaxyService {
 
       // Simulate KML content write
       await Future.delayed(Duration(milliseconds: 500));
-      print('   ✅ KML file created on master');
+      print('    KML file created on master');
 
       // Simulate sending to Google Earth
       await _mockCommand('echo "Sending to Google Earth"');
       await Future.delayed(Duration(milliseconds: 300));
-      print('   ✅ KML sent to Google Earth');
+      print('  KML sent to Google Earth');
 
       // Simulate sync to other rigs
       if (_rigCount != null && _rigCount! > 1) {
         await _syncToAllRigs(fileName);
       }
 
-      print('✅ KML sent to Liquid Galaxy successfully: $fileName');
+      print(' KML sent to Liquid Galaxy successfully: $fileName');
       return true;
     } catch (e) {
-      print('❌ Error sending KML to LG: $e');
+      print(' Error sending KML to LG: $e');
       return false;
     }
   }
@@ -121,36 +121,36 @@ class LiquidGalaxyService {
     if (_rigCount == null || _rigCount! <= 1) return;
 
     try {
-      print('🔄 Syncing to ${_rigCount! - 1} additional rigs...');
+      print(' Syncing to ${_rigCount! - 1} additional rigs...');
 
       for (int i = 2; i <= _rigCount!; i++) {
         await Future.delayed(Duration(milliseconds: 200));
-        print('   ✅ Synced to rig $i');
+        print('    Synced to rig $i');
       }
 
-      print('✅ Synced to all $_rigCount rigs');
+      print(' Synced to all $_rigCount rigs');
     } catch (e) {
-      print('❌ Error syncing to rigs: $e');
+      print(' Error syncing to rigs: $e');
     }
   }
 
   /// Mock clear Liquid Galaxy
   Future<bool> clearLG() async {
     if (!_isConnected) {
-      print('❌ Not connected to Liquid Galaxy');
+      print(' Not connected to Liquid Galaxy');
       return false;
     }
 
     try {
-      print('🧹 Mock clearing Liquid Galaxy...');
+      print(' Mock clearing Liquid Galaxy...');
 
       await _mockCommand('echo "Clearing Google Earth"');
       await Future.delayed(Duration(milliseconds: 500));
 
-      print('✅ Liquid Galaxy cleared');
+      print(' Liquid Galaxy cleared');
       return true;
     } catch (e) {
-      print('❌ Error clearing LG: $e');
+      print(' Error clearing LG: $e');
       return false;
     }
   }
@@ -164,12 +164,12 @@ class LiquidGalaxyService {
     double tilt = 0,
   }) async {
     if (!_isConnected) {
-      print('❌ Not connected to Liquid Galaxy');
+      print(' Not connected to Liquid Galaxy');
       return false;
     }
 
     try {
-      print('🛩️ Mock flying to location...');
+      print(' Mock flying to location...');
       print('   Coordinates: $latitude, $longitude');
       print('   Altitude: ${altitude}m');
       print('   Heading: ${heading}°');
@@ -181,10 +181,10 @@ class LiquidGalaxyService {
       await Future.delayed(Duration(seconds: 1));
       await sendKMLToLG(flyToKml, 'flyto');
 
-      print('✅ Flying to: $latitude, $longitude');
+      print(' Flying to: $latitude, $longitude');
       return true;
     } catch (e) {
-      print('❌ Error flying to location: $e');
+      print(' Error flying to location: $e');
       return false;
     }
   }
@@ -207,10 +207,10 @@ class LiquidGalaxyService {
       ];
 
       final status = statuses[DateTime.now().millisecond % statuses.length];
-      print('📊 LG Status: $status');
+      print(' LG Status: $status');
       return status;
     } catch (e) {
-      print('❌ Error getting LG status: $e');
+      print(' Error getting LG status: $e');
       return 'Error checking status';
     }
   }
@@ -222,22 +222,22 @@ class LiquidGalaxyService {
     }
 
     try {
-      print('🔄 Mock restarting Google Earth...');
+      print(' Mock restarting Google Earth...');
 
       // Mock kill process
       await _mockCommand('pkill -f google-earth');
       await Future.delayed(Duration(seconds: 1));
-      print('   ✅ Google Earth processes stopped');
+      print('    Google Earth processes stopped');
 
       // Mock start process
       await _mockCommand('export DISPLAY=:0 && google-earth &');
       await Future.delayed(Duration(seconds: 3));
-      print('   ✅ Google Earth started');
+      print('    Google Earth started');
 
-      print('✅ Google Earth restarted');
+      print(' Google Earth restarted');
       return true;
     } catch (e) {
-      print('❌ Error restarting Google Earth: $e');
+      print(' Error restarting Google Earth: $e');
       return false;
     }
   }
@@ -245,12 +245,12 @@ class LiquidGalaxyService {
   /// Mock send tour KML for immersive visualization
   Future<bool> sendTourKML(List<dynamic> disasters) async {
     if (!_isConnected || disasters.isEmpty) {
-      print('❌ Cannot send tour: ${!_isConnected ? "Not connected" : "No disasters"}');
+      print(' Cannot send tour: ${!_isConnected ? "Not connected" : "No disasters"}');
       return false;
     }
 
     try {
-      print('🎬 Mock creating disaster tour...');
+      print(' Mock creating disaster tour...');
       print('   Tour stops: ${disasters.length}');
 
       final tourKml = _generateTourKML(disasters);
@@ -258,7 +258,7 @@ class LiquidGalaxyService {
 
       return await sendKMLToLG(tourKml, 'disaster_tour');
     } catch (e) {
-      print('❌ Error sending tour KML: $e');
+      print(' Error sending tour KML: $e');
       return false;
     }
   }
@@ -266,7 +266,7 @@ class LiquidGalaxyService {
   /// Helper: Mock command execution
   Future<String> _mockCommand(String command) async {
     await Future.delayed(Duration(milliseconds: 100));
-    print('   🖥️  Mock command: $command');
+    print('   🖥  Mock command: $command');
     return 'Mock command executed successfully';
   }
 
@@ -395,19 +395,19 @@ class LiquidGalaxyService {
     required String password,
     int port = 22,
   }) async {
-    print('🧪 Testing connection parameters...');
+    print(' Testing connection parameters...');
     print('   Host: $host:$port');
     print('   Username: $username');
 
     await Future.delayed(Duration(seconds: 1));
 
     if (_isValidHost(host) && username.isNotEmpty && password.isNotEmpty) {
-      print('✅ Connection parameters look valid');
+      print(' Connection parameters look valid');
       return true;
     } else {
-      print('❌ Invalid connection parameters');
+      print(' Invalid connection parameters');
       return false;
     }
   }
-}
+}*/
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class DisasterEvent {
   final String id;
   final String title;
@@ -10,6 +12,10 @@ class DisasterEvent {
   final String location;
   final SeverityLevel severity;
   final Map<String, dynamic> additionalData;
+  final String? imageUrl;
+  final List<String> affectedAreas;
+  final bool isActive;
+  final DateTime? estimatedEnd;
 
   DisasterEvent({
     required this.id,
@@ -23,109 +29,105 @@ class DisasterEvent {
     required this.location,
     required this.severity,
     this.additionalData = const {},
+    this.imageUrl,
+    this.affectedAreas = const [],
+    this.isActive = true,
+    this.estimatedEnd,
   });
 
-  factory DisasterEvent.fromJson(Map<String, dynamic> json, DisasterType type) {
-    switch (type) {
-      case DisasterType.earthquake:
-        return DisasterEvent._fromUSGSJson(json);
-      case DisasterType.hurricane:
-        return DisasterEvent._fromGDACSJson(json);
-      case DisasterType.wildfire:
-        return DisasterEvent._fromNASAJson(json);
-      case DisasterType.flood:
-        return DisasterEvent._fromNOAAJson(json);
-    }
-  }
+  // Factory constructors for different API sources
+  factory DisasterEvent.fromUSGSJson(Map<String, dynamic> json) {
+    final properties = json['properties'] ?? {};
+    final geometry = json['geometry'] ?? {};
+    final coordinates = geometry['coordinates'] ?? [0, 0, 0];
 
-  factory DisasterEvent._fromUSGSJson(Map<String, dynamic> json) {
-    final properties = json['properties'];
-    final geometry = json['geometry'];
-    final coordinates = geometry['coordinates'];
+    final magnitude = properties['mag']?.toDouble() ?? 0.0;
+    final depth = coordinates.length > 2 ? coordinates[2]?.toDouble() ?? 0.0 : 0.0;
 
     return DisasterEvent(
-      id: json['id'] ?? '',
-      title: properties['title'] ?? 'Unknown Earthquake',
-      description: properties['place'] ?? '',
+      id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      title: properties['title'] ?? 'Earthquake Event',
+      description: properties['place'] ?? 'Location unknown',
       type: DisasterType.earthquake,
-      latitude: coordinates[1]?.toDouble() ?? 0.0,
-      longitude: coordinates[0]?.toDouble() ?? 0.0,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(properties['time'] ?? 0),
-      magnitude: properties['mag']?.toDouble() ?? 0.0,
+      latitude: coordinates.length > 1 ? coordinates[1]?.toDouble() ?? 0.0 : 0.0,
+      longitude: coordinates.length > 0 ? coordinates[0]?.toDouble() ?? 0.0 : 0.0,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(properties['time'] ?? DateTime.now().millisecondsSinceEpoch),
+      magnitude: magnitude,
       location: properties['place'] ?? 'Unknown Location',
-      severity: _calculateEarthquakeSeverity(properties['mag']?.toDouble() ?? 0.0),
+      severity: _calculateEarthquakeSeverity(magnitude),
+      imageUrl: properties['url'],
       additionalData: {
-        'depth': coordinates[2]?.toDouble() ?? 0.0,
-        'url': properties['url'] ?? '',
-        'alert': properties['alert'] ?? '',
+        'depth': depth,
+        'alert': properties['alert'] ?? 'green',
+        'felt': properties['felt'] ?? 0,
+        'tsunami': properties['tsunami'] ?? 0,
+        'net': properties['net'] ?? 'us',
+        'code': properties['code'] ?? '',
+        'status': properties['status'] ?? 'reviewed',
       },
+      affectedAreas: _calculateAffectedAreas(coordinates[1]?.toDouble() ?? 0.0, coordinates[0]?.toDouble() ?? 0.0, magnitude),
+      isActive: (properties['status'] ?? 'reviewed') != 'deleted',
     );
   }
 
-  factory DisasterEvent._fromGDACSJson(Map<String, dynamic> json) {
-    return DisasterEvent(
-      id: json['id']?.toString() ?? '',
-      title: json['name'] ?? 'Hurricane Event',
-      description: json['description'] ?? '',
-      type: DisasterType.hurricane,
-      latitude: json['lat']?.toDouble() ?? 0.0,
-      longitude: json['lon']?.toDouble() ?? 0.0,
-      timestamp: DateTime.tryParse(json['date'] ?? '') ?? DateTime.now(),
-      magnitude: json['severity']?.toDouble() ?? 0.0,
-      location: json['country'] ?? 'Unknown Location',
-      severity: _calculateHurricaneSeverity(json['severity']?.toDouble() ?? 0.0),
-      additionalData: {
-        'windSpeed': json['windSpeed'] ?? 0,
-        'category': json['category'] ?? '',
-        'status': json['status'] ?? 'active',
-      },
-    );
-  }
+  factory DisasterEvent.fromNASAJson(Map<String, dynamic> json) {
+    final geometry = json['geometry'] ?? [];
+    final coordinates = geometry.isNotEmpty ? geometry[0]['coordinates'] ?? [0, 0] : [0, 0];
 
-  factory DisasterEvent._fromNASAJson(Map<String, dynamic> json) {
-    final geometry = json['geometry'];
-    final coordinates = geometry?['coordinates'] ?? [0, 0];
+    // Parse date from NASA EONET format
+    DateTime eventDate = DateTime.now();
+    try {
+      if (json['geometry'] != null && json['geometry'].isNotEmpty) {
+        final dateStr = json['geometry'][0]['date'];
+        if (dateStr != null) {
+          eventDate = DateTime.parse(dateStr);
+        }
+      }
+    } catch (e) {
+      print('Error parsing NASA date: $e');
+    }
 
     return DisasterEvent(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
       title: json['title'] ?? 'Wildfire Event',
-      description: json['description'] ?? '',
+      description: json['description'] ?? 'Natural event detected',
       type: DisasterType.wildfire,
-      latitude: coordinates[1]?.toDouble() ?? 0.0,
-      longitude: coordinates[0]?.toDouble() ?? 0.0,
-      timestamp: DateTime.tryParse(json['date'] ?? '') ?? DateTime.now(),
-      magnitude: json['brightness']?.toDouble() ?? 0.0,
-      location: json['location'] ?? 'Unknown Location',
-      severity: _calculateWildfireSeverity(json['brightness']?.toDouble() ?? 0.0),
+      latitude: coordinates.length > 1 ? coordinates[1]?.toDouble() ?? 0.0 : 0.0,
+      longitude: coordinates.length > 0 ? coordinates[0]?.toDouble() ?? 0.0 : 0.0,
+      timestamp: eventDate,
+      magnitude: 0.0, // NASA doesn't provide magnitude for wildfires
+      location: _extractLocationFromTitle(json['title'] ?? ''),
+      severity: _calculateWildfireSeverity(json),
       additionalData: {
-        'brightness': json['brightness'] ?? 0,
-        'scan': json['scan'] ?? 0,
-        'track': json['track'] ?? 0,
-        'frp': json['frp'] ?? 0, // Fire Radiative Power
+        'categories': json['categories'] ?? [],
+        'sources': json['sources'] ?? [],
+        'closed': json['closed'],
+        'link': json['link'],
       },
+      affectedAreas: [_extractLocationFromTitle(json['title'] ?? '')],
+      isActive: json['closed'] == null,
     );
   }
 
-  factory DisasterEvent._fromNOAAJson(Map<String, dynamic> json) {
+  factory DisasterEvent.fromMockData(Map<String, dynamic> data) {
     return DisasterEvent(
-      id: json['id']?.toString() ?? '',
-      title: json['event'] ?? 'Flood Event',
-      description: json['description'] ?? '',
-      type: DisasterType.flood,
-      latitude: json['latitude']?.toDouble() ?? 0.0,
-      longitude: json['longitude']?.toDouble() ?? 0.0,
-      timestamp: DateTime.tryParse(json['issued'] ?? '') ?? DateTime.now(),
-      magnitude: json['severity']?.toDouble() ?? 0.0,
-      location: json['areaDesc'] ?? 'Unknown Location',
-      severity: _calculateFloodSeverity(json['severity']?.toDouble() ?? 0.0),
-      additionalData: {
-        'urgency': json['urgency'] ?? '',
-        'certainty': json['certainty'] ?? '',
-        'expires': json['expires'] ?? '',
-      },
+      id: data['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      title: data['title'] ?? 'Mock Disaster Event',
+      description: data['description'] ?? 'Mock disaster for testing',
+      type: DisasterType.values[data['type'] ?? 0],
+      latitude: data['latitude']?.toDouble() ?? 0.0,
+      longitude: data['longitude']?.toDouble() ?? 0.0,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] ?? DateTime.now().millisecondsSinceEpoch),
+      magnitude: data['magnitude']?.toDouble() ?? 0.0,
+      location: data['location'] ?? 'Mock Location',
+      severity: SeverityLevel.values[data['severity'] ?? 0],
+      additionalData: data['additionalData'] ?? {},
+      affectedAreas: List<String>.from(data['affectedAreas'] ?? []),
+      isActive: data['isActive'] ?? true,
     );
   }
 
+  // Severity calculation methods
   static SeverityLevel _calculateEarthquakeSeverity(double magnitude) {
     if (magnitude >= 7.0) return SeverityLevel.critical;
     if (magnitude >= 6.0) return SeverityLevel.high;
@@ -133,83 +135,165 @@ class DisasterEvent {
     return SeverityLevel.low;
   }
 
-  static SeverityLevel _calculateHurricaneSeverity(double category) {
-    if (category >= 4) return SeverityLevel.critical;
-    if (category >= 3) return SeverityLevel.high;
-    if (category >= 2) return SeverityLevel.medium;
+  static SeverityLevel _calculateWildfireSeverity(Map<String, dynamic> json) {
+    // For NASA EONET wildfires, we determine severity based on categories and description
+    final categories = json['categories'] ?? [];
+    final title = (json['title'] ?? '').toLowerCase();
+
+    if (title.contains('major') || title.contains('large') || title.contains('extreme')) {
+      return SeverityLevel.critical;
+    } else if (title.contains('significant') || title.contains('growing')) {
+      return SeverityLevel.high;
+    } else if (title.contains('moderate') || title.contains('contained')) {
+      return SeverityLevel.medium;
+    }
     return SeverityLevel.low;
   }
 
-  static SeverityLevel _calculateWildfireSeverity(double brightness) {
-    if (brightness >= 400) return SeverityLevel.critical;
-    if (brightness >= 350) return SeverityLevel.high;
-    if (brightness >= 300) return SeverityLevel.medium;
-    return SeverityLevel.low;
+  static List<String> _calculateAffectedAreas(double lat, double lng, double magnitude) {
+    // Simplified affected area calculation based on earthquake magnitude
+    List<String> areas = [];
+    if (magnitude >= 6.0) {
+      areas.add('Regional impact');
+    }
+    if (magnitude >= 7.0) {
+      areas.add('Multi-state impact');
+    }
+    if (magnitude >= 8.0) {
+      areas.add('International impact');
+    }
+    return areas;
   }
 
-  static SeverityLevel _calculateFloodSeverity(double severity) {
-    if (severity >= 4) return SeverityLevel.critical;
-    if (severity >= 3) return SeverityLevel.high;
-    if (severity >= 2) return SeverityLevel.medium;
-    return SeverityLevel.low;
+  static String _extractLocationFromTitle(String title) {
+    // Extract location from NASA EONET title format
+    final parts = title.split(' - ');
+    if (parts.length > 1) {
+      return parts[1].trim();
+    }
+    return title;
   }
 
+  // Convert to JSON for storage/transmission
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'type': type.index,
+      'latitude': latitude,
+      'longitude': longitude,
+      'timestamp': timestamp.millisecondsSinceEpoch,
+      'magnitude': magnitude,
+      'location': location,
+      'severity': severity.index,
+      'additionalData': additionalData,
+      'imageUrl': imageUrl,
+      'affectedAreas': affectedAreas,
+      'isActive': isActive,
+      'estimatedEnd': estimatedEnd?.millisecondsSinceEpoch,
+    };
+  }
+
+  // Create from JSON
+  factory DisasterEvent.fromJson(Map<String, dynamic> json) {
+    return DisasterEvent(
+      id: json['id']?.toString() ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      type: DisasterType.values[json['type'] ?? 0],
+      latitude: json['latitude']?.toDouble() ?? 0.0,
+      longitude: json['longitude']?.toDouble() ?? 0.0,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] ?? 0),
+      magnitude: json['magnitude']?.toDouble() ?? 0.0,
+      location: json['location'] ?? '',
+      severity: SeverityLevel.values[json['severity'] ?? 0],
+      additionalData: Map<String, dynamic>.from(json['additionalData'] ?? {}),
+      imageUrl: json['imageUrl'],
+      affectedAreas: List<String>.from(json['affectedAreas'] ?? []),
+      isActive: json['isActive'] ?? true,
+      estimatedEnd: json['estimatedEnd'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['estimatedEnd'])
+          : null,
+    );
+  }
+
+  // Generate KML for this disaster event
   String toKML() {
-    final color = _getSeverityColor();
-    final icon = _getDisasterIcon();
+    final styleId = '${type.name}-${severity.name}';
+    final description = _generateKMLDescription();
 
     return '''
 <Placemark>
-  <name>$title</name>
-  <description><![CDATA[
-    <h3>$title</h3>
-    <p><b>Type:</b> ${type.displayName}</p>
-    <p><b>Location:</b> $location</p>
-    <p><b>Magnitude:</b> $magnitude</p>
-    <p><b>Severity:</b> ${severity.displayName}</p>
-    <p><b>Time:</b> ${timestamp.toIso8601String()}</p>
-    <p><b>Description:</b> $description</p>
-  ]]></description>
+  <name><![CDATA[$title]]></name>
+  <description><![CDATA[$description]]></description>
+  <styleUrl>#$styleId</styleUrl>
   <Point>
     <coordinates>$longitude,$latitude,0</coordinates>
   </Point>
-  <Style>
-    <IconStyle>
-      <color>$color</color>
-      <scale>1.2</scale>
-      <Icon>
-        <href>$icon</href>
-      </Icon>
-    </IconStyle>
-  </Style>
+  <TimeStamp>
+    <when>${timestamp.toIso8601String()}</when>
+  </TimeStamp>
+  <ExtendedData>
+    <Data name="magnitude">
+      <value>$magnitude</value>
+    </Data>
+    <Data name="severity">
+      <value>${severity.displayName}</value>
+    </Data>
+    <Data name="type">
+      <value>${type.displayName}</value>
+    </Data>
+    <Data name="isActive">
+      <value>$isActive</value>
+    </Data>
+  </ExtendedData>
 </Placemark>
 ''';
+  }
+
+  String _generateKMLDescription() {
+    final buffer = StringBuffer();
+    buffer.write('<div style="font-family: Arial, sans-serif; max-width: 400px;">');
+    buffer.write('<h3 style="color: ${_getSeverityColor()}; margin-bottom: 10px;">$title</h3>');
+    buffer.write('<table style="width: 100%; border-collapse: collapse;">');
+
+    buffer.write('<tr><td style="font-weight: bold; padding: 5px; border-bottom: 1px solid #ddd;">Type:</td><td style="padding: 5px; border-bottom: 1px solid #ddd;">${type.displayName}</td></tr>');
+    buffer.write('<tr><td style="font-weight: bold; padding: 5px; border-bottom: 1px solid #ddd;">Location:</td><td style="padding: 5px; border-bottom: 1px solid #ddd;">$location</td></tr>');
+    buffer.write('<tr><td style="font-weight: bold; padding: 5px; border-bottom: 1px solid #ddd;">Magnitude:</td><td style="padding: 5px; border-bottom: 1px solid #ddd;">$magnitude</td></tr>');
+    buffer.write('<tr><td style="font-weight: bold; padding: 5px; border-bottom: 1px solid #ddd;">Severity:</td><td style="padding: 5px; border-bottom: 1px solid #ddd;">${severity.displayName}</td></tr>');
+    buffer.write('<tr><td style="font-weight: bold; padding: 5px; border-bottom: 1px solid #ddd;">Time:</td><td style="padding: 5px; border-bottom: 1px solid #ddd;">${_formatDateTime(timestamp)}</td></tr>');
+    buffer.write('<tr><td style="font-weight: bold; padding: 5px; border-bottom: 1px solid #ddd;">Status:</td><td style="padding: 5px; border-bottom: 1px solid #ddd;">${isActive ? 'Active' : 'Inactive'}</td></tr>');
+
+    if (affectedAreas.isNotEmpty) {
+      buffer.write('<tr><td style="font-weight: bold; padding: 5px; border-bottom: 1px solid #ddd;">Affected Areas:</td><td style="padding: 5px; border-bottom: 1px solid #ddd;">${affectedAreas.join(', ')}</td></tr>');
+    }
+
+    buffer.write('</table>');
+
+    if (description.isNotEmpty) {
+      buffer.write('<p style="margin-top: 10px; color: #555; font-size: 14px;">$description</p>');
+    }
+
+    buffer.write('</div>');
+    return buffer.toString();
   }
 
   String _getSeverityColor() {
     switch (severity) {
       case SeverityLevel.critical:
-        return 'ff0000ff'; // Red
+        return '#dc3545';
       case SeverityLevel.high:
-        return 'ff0080ff'; // Orange
+        return '#fd7e14';
       case SeverityLevel.medium:
-        return 'ff00ffff'; // Yellow
+        return '#ffc107';
       case SeverityLevel.low:
-        return 'ff00ff00'; // Green
+        return '#28a745';
     }
   }
 
-  String _getDisasterIcon() {
-    switch (type) {
-      case DisasterType.earthquake:
-        return 'http://maps.google.com/mapfiles/kml/shapes/earthquake.png';
-      case DisasterType.hurricane:
-        return 'http://maps.google.com/mapfiles/kml/shapes/cyclone.png';
-      case DisasterType.wildfire:
-        return 'http://maps.google.com/mapfiles/kml/shapes/fire.png';
-      case DisasterType.flood:
-        return 'http://maps.google.com/mapfiles/kml/shapes/water.png';
-    }
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 }
 
@@ -229,6 +313,19 @@ enum DisasterType {
         return 'Wildfire';
       case DisasterType.flood:
         return 'Flood';
+    }
+  }
+
+  String get iconName {
+    switch (this) {
+      case DisasterType.earthquake:
+        return 'earthquake';
+      case DisasterType.hurricane:
+        return 'cyclone';
+      case DisasterType.wildfire:
+        return 'fire';
+      case DisasterType.flood:
+        return 'water';
     }
   }
 }
