@@ -1,8 +1,8 @@
 name: catastrophe_visualizer
-description: "Real-time disaster monitoring application for Liquid Galaxy - GSOC 2025"
+description: "Real-time disaster monitoring application for Liquid Galaxy - GSOC 2025 "
 
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.4.0+4  # Week 4 version
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -16,32 +16,56 @@ dependencies:
   cupertino_icons: ^1.0.6
 
   # State Management
-  provider: ^6.0.5
+  provider: ^6.1.2
 
-  # Networking
-  http: ^1.1.0
+  # Networking & Connectivity
+  http: ^1.1.2
+  connectivity_plus: ^5.0.2
 
-  # XML Processing for KML
-  xml: ^6.3.0
+  # SSH Connection for Liquid Galaxy (Week 4 Essential)
+  dartssh2: ^2.8.6
 
-  # Date/Time utilities
+  # Data Processing & Storage
+  shared_preferences: ^2.2.2
+  xml: ^6.4.2
+
+  # Date/Time Utilities
   intl: ^0.18.1
 
-  # Local Storage
-  shared_preferences: ^2.2.2
+  # Math utilities (for distance calculations)
+  collection: ^1.18.0
 
-  # SSH for Liquid Galaxy (add later when ready)
-  # dartssh2: ^2.8.6
+  # Optional: JSON handling (if needed for complex API responses)
+  # json_annotation: ^4.8.1
 
-  # Location services (add when ready for maps)
-  # geolocator: ^10.1.0
-  # permission_handler: ^11.0.1
-  # google_maps_flutter: ^2.5.0
+  # Future additions for advanced features:
+  # geolocator: ^10.1.0              # GPS location services
+  # permission_handler: ^11.0.1      # Device permissions
+  # google_maps_flutter: ^2.5.0      # Google Maps integration
+  # path_provider: ^2.1.1            # File system access
+  # file_picker: ^6.1.1              # File picking capabilities
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # Linting
   flutter_lints: ^3.0.1
+
+  # Code generation (if using json_serializable)
+  # build_runner: ^2.4.7
+  # json_serializable: ^6.7.1
 
 flutter:
   uses-material-design: true
+
+  # Assets (add when you have icons/images)
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+
+  # Custom fonts (add if needed)
+  # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: fonts/Roboto-Regular.ttf
