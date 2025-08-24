@@ -1,71 +1,54 @@
 name: catastrophe_visualizer
-description: "Real-time disaster monitoring application for Liquid Galaxy - GSOC 2025 "
-
+description: "Advanced Disaster Visualizer with Complete Liquid Galaxy integration"
 publish_to: 'none'
-version: 1.4.0+4  # Week 4 version
+version: 2.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-  flutter: ">=3.10.0"
+  sdk: ^3.6.1
 
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.8
 
-  # Core UI
-  cupertino_icons: ^1.0.6
+  # Core dependencies
+  dartssh2: ^2.9.0
+  shared_preferences: ^2.0.15
+  path_provider: ^2.0.15
+  provider: ^6.0.5
+  http: ^1.1.0
+  intl: ^0.19.0
 
-  # State Management
-  provider: ^6.1.2
+  # Enhanced LG features
+  url_launcher: ^6.1.12
+  package_info_plus: ^4.0.2
+  device_info_plus: ^9.1.0
+  lottie: ^2.6.0
+  smooth_page_indicator: ^1.1.0
 
-  # Networking & Connectivity
-  http: ^1.1.2
-  connectivity_plus: ^5.0.2
+  # SIMPLIFIED FILE HANDLING (mobile-focused, no desktop issues)
+  # Removed file_picker to avoid desktop platform issues
+  # Using only path_provider + permission_handler for KML downloads
 
-  # SSH Connection for Liquid Galaxy (Week 4 Essential)
-  dartssh2: ^2.8.6
+  # File handling and permissions
+  permission_handler: ^11.0.1
 
-  # Data Processing & Storage
-  shared_preferences: ^2.2.2
-  xml: ^6.4.2
+  # UI enhancements
+  animated_text_kit: ^4.2.2
+  shimmer: ^3.0.0
 
-  # Date/Time Utilities
-  intl: ^0.18.1
-
-  # Math utilities (for distance calculations)
-  collection: ^1.18.0
-
-  # Optional: JSON handling (if needed for complex API responses)
-  # json_annotation: ^4.8.1
-
-  # Future additions for advanced features:
-  # geolocator: ^10.1.0              # GPS location services
-  # permission_handler: ^11.0.1      # Device permissions
-  # google_maps_flutter: ^2.5.0      # Google Maps integration
-  # path_provider: ^2.1.1            # File system access
-  # file_picker: ^6.1.1              # File picking capabilities
+  # SVG support
+  flutter_svg: ^2.0.7
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # Linting
-  flutter_lints: ^3.0.1
-
-  # Code generation (if using json_serializable)
-  # build_runner: ^2.4.7
-  # json_serializable: ^6.7.1
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true
 
-  # Assets (add when you have icons/images)
-  # assets:
-  #   - assets/images/
-  #   - assets/icons/
+  assets:
+    - assets/images/
 
-  # Custom fonts (add if needed)
-  # fonts:
-  #   - family: Roboto
-  #     fonts:
-  #       - asset: fonts/Roboto-Regular.ttf
+
